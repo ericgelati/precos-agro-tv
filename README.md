@@ -14,11 +14,16 @@ soja e milho da bolsa de Chicago (CBOT), atualizando sozinho o dia inteiro.
 
 > **Sobre a frequência:** você pediu atualização a cada 1 minuto. O
 > agendamento gratuito do GitHub Actions não é confiável abaixo de ~5 minutos
-> (o próprio GitHub pode atrasar execuções em horários de pico), e a fonte de
-> dados de futuros (Stooq) também não muda a cada segundo. Por isso os dados
-> em si são renovados a cada 5 minutos, mas a tela **verifica** se há
+> (o próprio GitHub pode atrasar execuções em horários de pico). Por isso os
+> dados em si são renovados a cada 5 minutos, mas a tela **verifica** se há
 > novidade a cada 1 minuto — assim que o novo preço existir, ele aparece em
 > até 1 minuto, sem espera desnecessária.
+
+> **Fonte dos dados:** Yahoo Finance (mesma base que alimenta finance.yahoo.com),
+> símbolos `BRL=X` (dólar), `ZS=F` (soja CBOT) e `ZC=F` (milho CBOT). Não
+> precisa de chave/cadastro. Se o Yahoo ficar fora do ar por um instante, o
+> painel mantém o último preço válido e avisa que está desatualizado, em vez
+> de mostrar erro.
 
 ## Passo 1 — Publicar no GitHub
 

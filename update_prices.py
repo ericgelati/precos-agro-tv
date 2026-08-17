@@ -3,35 +3,61 @@
 Busca cotação do dólar (USD/BRL) e futuros de soja e milho (CBOT) e grava
 tudo em data.json, que é servido estaticamente pelo GitHub Pages.
 
-Fontes:
-  - USD/BRL: AwesomeAPI (economia.awesomeapi.com.br) - gratuita, sem chave.
-  - Soja (ZS.F) e Milho (ZC.F) futuros CBOT: Stooq (stooq.com) - gratuita, sem chave.
+Fonte: Yahoo Finance (query1.finance.yahoo.com/v8/finance/chart/<símbolo>) —
+gratuita, sem chave, mesma fonte que alimenta finance.yahoo.com.
+  - Dólar: símbolo BRL=X (USD/BRL)
+  - Soja:  símbolo ZS=F  (futuro CBOT, cents/bushel)
+  - Milho: símbolo ZC=F  (futuro CBOT, cents/bushel)
 
-O script é tolerante a falhas: se uma fonte falhar, mantém o último valor
-conhecido (lido do data.json anterior) e marca o campo como "stale".
+O script é tolerante a falhas: se uma fonte falhar (rede instável, limite de
+requisições etc.), mantém o último valor conhecido (lido do data.json
+anterior) e marca o campo como "stale", em vez de quebrar o painel.
 """
-import csv
-import io
 import json
 import sys
+import time
+import urllib.error
 import urllib.request
 from datetime import datetime, timezone, timedelta
 
 DATA_FILE = "data.json"
 TIMEOUT = 15
+RETRIES = 3
+RETRY_DELAY_SEC = 4
 BR_TZ = timezone(timedelta(hours=-3))
 
 # Fatores de conversão bushel -> saca de 60kg
 SOYBEAN_BUSHEL_TO_SACA = 60 / 27.2155  # ~2.2046
 CORN_BUSHEL_TO_SACA = 60 / 25.4012     # ~2.3621
 
-HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; precos-agro-tv/1.0)"}
+HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+    ),
+    "Accept": "application/json,text/plain,*/*",
+}
 
 
-def http_get(url):
-    req = urllib.request.Request(url, headers=HEADERS)
-    with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
-        return resp.read().decode("utf-8", errors="replace")
+def fetch_yahoo(symbol):
+    """Busca preço atual + fechamento anterior de um símbolo no Yahoo Finance."""
+    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
+    last_err = None
+    for attempt in range(1, RETRIES + 1):
+        try:
+            req = urllib.request.Request(url, headers=HEADERS)
+            with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+                body = resp.read().decode("utf-8", errors="replace")
+            meta = json.loads(body)["chart"]["result"][0]["meta"]
+            price = float(meta["regularMarketPrice"])
+            prev_close = float(meta.get("previousClose") or meta.get("chartPreviousClose") or price)
+            pct_change = ((price - prev_close) / prev_close * 100) if prev_close else 0.0
+            return {"price": price, "pct_change": pct_change}
+        except Exception as e:  # noqa: BLE001 - queremos capturar qualquer falha de rede/parse
+            last_err = e
+            if attempt < RETRIES:
+                time.sleep(RETRY_DELAY_SEC)
+    raise RuntimeError(f"falha ao buscar {symbol} após {RETRIES} tentativas: {last_err}")
 
 
 def load_previous():
@@ -40,32 +66,6 @@ def load_previous():
             return json.load(f)
     except Exception:
         return {}
-
-
-def fetch_usdbrl():
-    url = "https://economia.awesomeapi.com.br/json/last/USD-BRL"
-    body = http_get(url)
-    data = json.loads(body)["USDBRL"]
-    return {
-        "bid": float(data["bid"]),
-        "pct_change": float(data["pctChange"]),
-    }
-
-
-def fetch_stooq(symbol):
-    # f=sd2t2ohlcv -> Symbol,Date,Time,Open,High,Low,Close,Volume
-    url = f"https://stooq.com/q/l/?s={symbol}&f=sd2t2ohlcv&h&e=csv"
-    body = http_get(url)
-    reader = csv.DictReader(io.StringIO(body))
-    row = next(reader)
-    close = row.get("Close")
-    open_ = row.get("Open")
-    if close in (None, "", "N/D"):
-        raise ValueError(f"stooq sem dado válido para {symbol}: {row}")
-    close = float(close)
-    open_ = float(open_) if open_ not in (None, "", "N/D") else close
-    pct_change = ((close - open_) / open_ * 100) if open_ else 0.0
-    return {"price_usd_bushel": close, "pct_change": pct_change}
 
 
 def build_field(previous_field, fresh_value, extra=None, now_iso=None, now_br=None):
@@ -93,7 +93,8 @@ def main():
 
     # --- USD/BRL ---
     try:
-        usd = fetch_usdbrl()
+        y = fetch_yahoo("BRL=X")
+        usd = {"bid": round(y["price"], 4), "pct_change": round(y["pct_change"], 2)}
     except Exception as e:
         usd = None
         errors.append(f"USD/BRL: {e}")
@@ -104,19 +105,17 @@ def main():
         previous.get("usdbrl"), usd, now_iso=now_iso, now_br=now_br
     )
 
-    # --- Soja (ZS.F) ---
+    # --- Soja (ZS=F, cents/bushel) ---
     try:
-        soy = fetch_stooq("zs.f")
+        y = fetch_yahoo("ZS=F")
+        price_usd_bushel = round(y["price"] / 100, 4)
+        soy = {"price_usd_bushel": price_usd_bushel, "pct_change": round(y["pct_change"], 2)}
         soy_extra = {
-            "symbol": "ZS.F (CBOT)",
-            "price_brl_saca_est": round(
-                soy["price_usd_bushel"] * SOYBEAN_BUSHEL_TO_SACA * usdbrl_rate / 100, 2
-            )
+            "symbol": "ZS=F (CBOT)",
+            "price_brl_saca_est": round(price_usd_bushel * SOYBEAN_BUSHEL_TO_SACA * usdbrl_rate, 2)
             if usdbrl_rate
             else None,
         }
-        # Nota: cotação CBOT de soja é em cents/bushel -> dividir por 100 para US$.
-        soy["price_usd_bushel"] = round(soy["price_usd_bushel"] / 100, 4)
     except Exception as e:
         soy = None
         soy_extra = None
@@ -126,18 +125,17 @@ def main():
         previous.get("soybean"), soy, extra=soy_extra, now_iso=now_iso, now_br=now_br
     )
 
-    # --- Milho (ZC.F) ---
+    # --- Milho (ZC=F, cents/bushel) ---
     try:
-        corn = fetch_stooq("zc.f")
+        y = fetch_yahoo("ZC=F")
+        price_usd_bushel = round(y["price"] / 100, 4)
+        corn = {"price_usd_bushel": price_usd_bushel, "pct_change": round(y["pct_change"], 2)}
         corn_extra = {
-            "symbol": "ZC.F (CBOT)",
-            "price_brl_saca_est": round(
-                corn["price_usd_bushel"] * CORN_BUSHEL_TO_SACA * usdbrl_rate / 100, 2
-            )
+            "symbol": "ZC=F (CBOT)",
+            "price_brl_saca_est": round(price_usd_bushel * CORN_BUSHEL_TO_SACA * usdbrl_rate, 2)
             if usdbrl_rate
             else None,
         }
-        corn["price_usd_bushel"] = round(corn["price_usd_bushel"] / 100, 4)
     except Exception as e:
         corn = None
         corn_extra = None
