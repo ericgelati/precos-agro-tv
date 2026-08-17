@@ -1,0 +1,31 @@
+{
+  "generated_at_utc": "2026-08-17T18:00:00+00:00",
+  "generated_at_br": "17/08/2026 15:00:00",
+  "usdbrl": {
+    "bid": 5.4012,
+    "pct_change": 0.18,
+    "stale": false,
+    "updated_at_utc": "2026-08-17T18:00:00+00:00",
+    "updated_at_br": "17/08/2026 15:00:00"
+  },
+  "soybean": {
+    "price_usd_bushel": 10.325,
+    "pct_change": -0.32,
+    "symbol": "ZS.F (CBOT)",
+    "price_brl_saca_est": 122.98,
+    "stale": false,
+    "updated_at_utc": "2026-08-17T18:00:00+00:00",
+    "updated_at_br": "17/08/2026 15:00:00"
+  },
+  "corn": {
+    "price_usd_bushel": 4.1525,
+    "pct_change": 0.65,
+    "symbol": "ZC.F (CBOT)",
+    "price_brl_saca_est": 52.94,
+    "stale": false,
+    "updated_at_utc": "2026-08-17T18:00:00+00:00",
+    "updated_at_br": "17/08/2026 15:00:00"
+  },
+  "errors": [],
+  "_nota": "Este é um arquivo de EXEMPLO para o painel funcionar antes da primeira execução do GitHub Action. Ele será sobrescrito automaticamente a cada atualização real."
+}

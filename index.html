@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Painel de Preços — Dólar, Soja e Milho</title>
+<style>
+  :root {
+    color-scheme: dark;
+    /* Paleta extraída da logo E.F. Gelati */
+    --page:            #00220f;   /* verde bem escuro — fundo da página */
+    --surface:         #006634;   /* verde da marca — cartões */
+    --surface-raised:  #0a7a40;   /* verde um tom mais claro — hover/realce */
+    --text-primary:    #ffffff;
+    --text-secondary:  #cfe8d9;   /* verde-menta claro */
+    --text-muted:      #b0d0ba;
+    --gridline:        rgba(255,255,255,0.14);
+    --border:          rgba(255,255,255,0.16);
+    --good:            #99cc33;   /* verde-limão da logo — alta */
+    --bad:             #ffab91;   /* coral — baixa (contraste em fundo verde) */
+    --warning:         #ffcc00;   /* dourado da logo — grãos / alerta */
+    --accent:          #ffcc00;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: var(--page);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    overflow: hidden;
+  }
+
+  .app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    padding: clamp(16px, 2.2vw, 40px);
+    gap: clamp(12px, 1.8vw, 28px);
+  }
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: clamp(8px, 1vw, 16px);
+    border-bottom: 2px solid var(--accent);
+  }
+
+  header .brand {
+    display: flex;
+    align-items: center;
+    gap: clamp(12px, 1.4vw, 22px);
+  }
+
+  header .brand img {
+    height: clamp(48px, 5.4vw, 92px);
+    width: auto;
+    display: block;
+  }
+
+  header .brand .subtitle {
+    font-size: clamp(14px, 1.3vw, 22px);
+    color: var(--text-secondary);
+    font-weight: 500;
+    border-left: 1px solid var(--border);
+    padding-left: clamp(12px, 1.4vw, 22px);
+    line-height: 1.25;
+    max-width: 22ch;
+  }
+
+  header .clock {
+    font-size: clamp(18px, 2vw, 32px);
+    font-variant-numeric: tabular-nums;
+    color: var(--text-secondary);
+    text-align: right;
+  }
+
+  header .clock .date {
+    font-size: 0.5em;
+    color: var(--text-muted);
+    display: block;
+    font-weight: 400;
+    text-transform: capitalize;
+  }
+
+  main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: clamp(14px, 1.8vw, 28px);
+    min-height: 0;
+  }
+
+  .tile {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: clamp(20px, 2.4vw, 40px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: clamp(10px, 1.4vw, 22px);
+    min-width: 0;
+  }
+
+  .tile .label {
+    font-size: clamp(16px, 1.5vw, 26px);
+    color: var(--text-secondary);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+
+  .tile .value-row {
+    display: flex;
+    align-items: baseline;
+    gap: clamp(8px, 1vw, 16px);
+    flex-wrap: wrap;
+  }
+
+  .tile .value {
+    font-size: clamp(32px, 4.2vw, 76px);
+    font-weight: 700;
+    line-height: 1;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  .tile .unit {
+    font-size: clamp(16px, 1.6vw, 26px);
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .tile .delta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
+    font-size: clamp(16px, 1.7vw, 28px);
+    font-weight: 700;
+    padding: 0.15em 0.6em;
+    border-radius: 999px;
+    width: fit-content;
+  }
+
+  .delta.up   { color: var(--good);  background: rgba(153,204,51,0.18); }
+  .delta.down { color: var(--bad);   background: rgba(255,171,145,0.16); }
+  .delta.flat { color: var(--text-muted); background: rgba(255,255,255,0.10); }
+
+  .tile .secondary {
+    font-size: clamp(15px, 1.4vw, 24px);
+    color: var(--text-secondary);
+  }
+
+  .tile .secondary strong {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  .tile.stale {
+    outline: 2px solid var(--warning);
+  }
+
+  .tile .stale-tag {
+    font-size: clamp(13px, 1.1vw, 18px);
+    color: var(--warning);
+    font-weight: 600;
+    display: none;
+  }
+
+  .tile.stale .stale-tag { display: inline-flex; align-items: center; gap: 0.4em; }
+
+  footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: clamp(13px, 1.1vw, 18px);
+    color: var(--text-muted);
+    padding-top: clamp(6px, 0.8vw, 12px);
+    border-top: 1px solid var(--gridline);
+  }
+
+  footer .status-ok { color: var(--good); }
+  footer .status-warn { color: var(--warning); font-weight: 600; }
+
+  .banner {
+    display: none;
+    background: rgba(255,204,0,0.14);
+    border: 1px solid var(--warning);
+    color: var(--warning);
+    border-radius: 12px;
+    padding: 10px 18px;
+    font-size: clamp(14px, 1.2vw, 20px);
+    font-weight: 600;
+  }
+  .banner.show { display: block; }
+
+  @media (max-width: 900px) {
+    main { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="brand">
+        <img src="logo.png" alt="E.F. Gelati — Comércio e Exportação de Grãos" />
+        <span class="subtitle">Painel de preços — escritório</span>
+      </div>
+      <div class="clock">
+        <span id="clock-time">--:--:--</span>
+        <span class="date" id="clock-date">-- de -- de ----</span>
+      </div>
+    </header>
+
+    <div class="banner" id="stale-banner">⚠ Dados desatualizados — verifique a conexão ou o GitHub Action de atualização.</div>
+
+    <main>
+      <section class="tile" id="tile-usdbrl">
+        <div class="label">Dólar comercial (USD/BRL)</div>
+        <div class="value-row">
+          <span class="value" id="usdbrl-value">—</span>
+        </div>
+        <div class="delta flat" id="usdbrl-delta">—</div>
+        <div class="secondary" id="usdbrl-secondary">&nbsp;</div>
+        <div class="stale-tag">⚠ desatualizado</div>
+      </section>
+
+      <section class="tile" id="tile-soybean">
+        <div class="label">Soja — futuro CBOT (ZS)</div>
+        <div class="value-row">
+          <span class="value" id="soybean-value">—</span>
+          <span class="unit">US$/bushel</span>
+        </div>
+        <div class="delta flat" id="soybean-delta">—</div>
+        <div class="secondary" id="soybean-secondary">&nbsp;</div>
+        <div class="stale-tag">⚠ desatualizado</div>
+      </section>
+
+      <section class="tile" id="tile-corn">
+        <div class="label">Milho — futuro CBOT (ZC)</div>
+        <div class="value-row">
+          <span class="value" id="corn-value">—</span>
+          <span class="unit">US$/bushel</span>
+        </div>
+        <div class="delta flat" id="corn-delta">—</div>
+        <div class="secondary" id="corn-secondary">&nbsp;</div>
+        <div class="stale-tag">⚠ desatualizado</div>
+      </section>
+    </main>
+
+    <footer>
+      <span id="footer-updated">Carregando dados…</span>
+      <span id="footer-status"></span>
+    </footer>
+  </div>
+
+<script>
+  const REFRESH_MS = 60 * 1000;       // frontend relê o data.json a cada 1 minuto
+  const STALE_AFTER_MIN = 20;         // se o data.json não mudar em 20 min, avisa
+  const MONTHS = ["janeiro","fevereiro","março","abril","maio","junho","julho",
+                   "agosto","setembro","outubro","novembro","dezembro"];
+  const WEEKDAYS = ["domingo","segunda-feira","terça-feira","quarta-feira",
+                     "quinta-feira","sexta-feira","sábado"];
+
+  function fmtBRL(n) {
+    return n.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+  }
+  function fmtUSD(n) {
+    return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function fmtSaca(n) {
+    return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function setDelta(el, pct) {
+    el.classList.remove('up', 'down', 'flat');
+    if (pct === null || pct === undefined || isNaN(pct)) {
+      el.classList.add('flat');
+      el.textContent = '—';
+      return;
+    }
+    const arrow = pct > 0 ? '▲' : pct < 0 ? '▼' : '■';
+    const cls = pct > 0 ? 'up' : pct < 0 ? 'down' : 'flat';
+    el.classList.add(cls);
+    el.textContent = `${arrow} ${Math.abs(pct).toFixed(2)}%`;
+  }
+
+  function setTileStale(tileEl, stale) {
+    tileEl.classList.toggle('stale', !!stale);
+  }
+
+  function updateClock() {
+    const now = new Date();
+    document.getElementById('clock-time').textContent =
+      now.toLocaleTimeString('pt-BR', { hour12: false });
+    document.getElementById('clock-date').textContent =
+      `${WEEKDAYS[now.getDay()]}, ${now.getDate()} de ${MONTHS[now.getMonth()]} de ${now.getFullYear()}`;
+  }
+
+  async function loadData() {
+    try {
+      const res = await fetch(`data.json?t=${Date.now()}`, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      render(data);
+    } catch (err) {
+      document.getElementById('footer-status').innerHTML =
+        `<span class="status-warn">⚠ falha ao carregar data.json</span>`;
+      console.error('Erro ao carregar dados:', err);
+    }
+  }
+
+  function render(data) {
+    // USD/BRL
+    if (data.usdbrl && data.usdbrl.bid !== undefined) {
+      document.getElementById('usdbrl-value').textContent = 'R$ ' + fmtBRL(data.usdbrl.bid);
+      setDelta(document.getElementById('usdbrl-delta'), data.usdbrl.pct_change);
+      document.getElementById('usdbrl-secondary').innerHTML =
+        `Atualizado às <strong>${data.usdbrl.updated_at_br || '—'}</strong>`;
+      setTileStale(document.getElementById('tile-usdbrl'), data.usdbrl.stale);
+    }
+
+    // Soja
+    if (data.soybean && data.soybean.price_usd_bushel !== undefined) {
+      document.getElementById('soybean-value').textContent = 'US$ ' + fmtUSD(data.soybean.price_usd_bushel);
+      setDelta(document.getElementById('soybean-delta'), data.soybean.pct_change);
+      const saca = data.soybean.price_brl_saca_est;
+      document.getElementById('soybean-secondary').innerHTML = saca
+        ? `≈ <strong>R$ ${fmtSaca(saca)}</strong> / saca 60kg (estimado)`
+        : '&nbsp;';
+      setTileStale(document.getElementById('tile-soybean'), data.soybean.stale);
+    }
+
+    // Milho
+    if (data.corn && data.corn.price_usd_bushel !== undefined) {
+      document.getElementById('corn-value').textContent = 'US$ ' + fmtUSD(data.corn.price_usd_bushel);
+      setDelta(document.getElementById('corn-delta'), data.corn.pct_change);
+      const saca = data.corn.price_brl_saca_est;
+      document.getElementById('corn-secondary').innerHTML = saca
+        ? `≈ <strong>R$ ${fmtSaca(saca)}</strong> / saca 60kg (estimado)`
+        : '&nbsp;';
+      setTileStale(document.getElementById('tile-corn'), data.corn.stale);
+    }
+
+    // Rodapé + verificação de dados velhos
+    document.getElementById('footer-updated').textContent =
+      `Última atualização dos dados: ${data.generated_at_br || '—'}`;
+
+    let minutesOld = null;
+    if (data.generated_at_utc) {
+      minutesOld = (Date.now() - new Date(data.generated_at_utc).getTime()) / 60000;
+    }
+    const banner = document.getElementById('stale-banner');
+    const statusEl = document.getElementById('footer-status');
+    if (minutesOld !== null && minutesOld > STALE_AFTER_MIN) {
+      banner.classList.add('show');
+      statusEl.innerHTML = `<span class="status-warn">⚠ sem atualização há ${Math.round(minutesOld)} min</span>`;
+    } else {
+      banner.classList.remove('show');
+      statusEl.innerHTML = `<span class="status-ok">● atualizando normalmente</span>`;
+    }
+  }
+
+  updateClock();
+  setInterval(updateClock, 1000);
+  loadData();
+  setInterval(loadData, REFRESH_MS);
+</script>
+</body>
+</html>
