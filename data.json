@@ -1,10 +1,10 @@
 {
-  "generated_at_utc": "2026-08-17T18:00:00+00:00",
-  "generated_at_br": "17/08/2026 15:00:00",
+  "generated_at_utc": "2026-08-17T19:09:16.446348+00:00",
+  "generated_at_br": "17/08/2026 16:09:16",
   "usdbrl": {
     "bid": 5.4012,
     "pct_change": 0.18,
-    "stale": false,
+    "stale": true,
     "updated_at_utc": "2026-08-17T18:00:00+00:00",
     "updated_at_br": "17/08/2026 15:00:00"
   },
@@ -13,7 +13,7 @@
     "pct_change": -0.32,
     "symbol": "ZS.F (CBOT)",
     "price_brl_saca_est": 122.98,
-    "stale": false,
+    "stale": true,
     "updated_at_utc": "2026-08-17T18:00:00+00:00",
     "updated_at_br": "17/08/2026 15:00:00"
   },
@@ -22,10 +22,13 @@
     "pct_change": 0.65,
     "symbol": "ZC.F (CBOT)",
     "price_brl_saca_est": 52.94,
-    "stale": false,
+    "stale": true,
     "updated_at_utc": "2026-08-17T18:00:00+00:00",
     "updated_at_br": "17/08/2026 15:00:00"
   },
-  "errors": [],
-  "_nota": "Este é um arquivo de EXEMPLO para o painel funcionar antes da primeira execução do GitHub Action. Ele será sobrescrito automaticamente a cada atualização real."
+  "errors": [
+    "USD/BRL: HTTP Error 429: Too Many Requests",
+    "Soja: HTTP Error 404: Not Found",
+    "Milho: HTTP Error 404: Not Found"
+  ]
 }
