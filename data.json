@@ -1,30 +1,30 @@
 {
-  "generated_at_utc": "2026-10-23T19:10:33.843559+00:00",
-  "generated_at_br": "23/10/2026 16:10:33",
+  "generated_at_utc": "2026-10-23T22:12:15.479979+00:00",
+  "generated_at_br": "23/10/2026 19:12:15",
   "usdbrl": {
-    "bid": 5.0005,
-    "pct_change": -1.03,
+    "bid": 4.9652,
+    "pct_change": -1.73,
     "stale": false,
-    "updated_at_utc": "2026-10-23T19:10:33.843559+00:00",
-    "updated_at_br": "23/10/2026 16:10:33"
+    "updated_at_utc": "2026-10-23T22:12:15.479979+00:00",
+    "updated_at_br": "23/10/2026 19:12:15"
   },
   "soybean": {
     "price_usd_bushel": 12.695,
     "pct_change": 0.38,
     "symbol": "ZS=F (CBOT)",
-    "price_brl_saca_est": 139.95,
+    "price_brl_saca_est": 138.96,
     "stale": false,
-    "updated_at_utc": "2026-10-23T19:10:33.843559+00:00",
-    "updated_at_br": "23/10/2026 16:10:33"
+    "updated_at_utc": "2026-10-23T22:12:15.479979+00:00",
+    "updated_at_br": "23/10/2026 19:12:15"
   },
   "corn": {
     "price_usd_bushel": 4.56,
     "pct_change": -0.98,
     "symbol": "ZC=F (CBOT)",
-    "price_brl_saca_est": 53.86,
+    "price_brl_saca_est": 53.48,
     "stale": false,
-    "updated_at_utc": "2026-10-23T19:10:33.843559+00:00",
-    "updated_at_br": "23/10/2026 16:10:33"
+    "updated_at_utc": "2026-10-23T22:12:15.479979+00:00",
+    "updated_at_br": "23/10/2026 19:12:15"
   },
   "errors": []
 }
